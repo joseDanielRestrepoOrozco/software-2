@@ -12,6 +12,7 @@ export default defineConfig([
     rules: {
       '@stylistic/brace-style': ['off'],
       '@stylistic/arrow-parens': ['off'],
+      '@stylistic/comma-dangle': ['off'],
       'no-unused-vars': [
         'warn',
         {
