@@ -24,9 +24,8 @@ const signup = async (req, res) => {
   const createUser = await prisma.users.create({
     data: {
       email,
-      current_password: await bcrypt.hash(currentPassword, 10),
+      currentPassword: await bcrypt.hash(currentPassword, 10),
       fullname,
-      status: 'PENDING',
       verificationCode,
       verificationCodeExpires: verificationExpires,
     },
@@ -50,8 +49,34 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, currentPassword } = req.body
-  console.log({ email, currentPassword })
-  res.send({ email, currentPassword })
+  const user = await prisma.users.findUnique({
+    where: { email },
+  })
+
+  if (!user) {
+    return res.status(400).json({ error: 'Invalid credentials' })
+  }
+
+  if (user.status !== 'ACTIVE') {
+    return res.status(403).json({ error: 'Account not verified' })
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    currentPassword,
+    user.currentPassword
+  )
+
+  if (!isPasswordValid) {
+    return res.status(400).json({ error: 'Invalid credentials' })
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '3h' }
+  )
+
+  res.send({ token })
 }
 
 const verifyEmail = async (req, res) => {
